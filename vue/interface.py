@@ -27,7 +27,7 @@ def dessiner(canvas, villes, chemin=None, couleur_route="blue"):
         )
 
 
-# Fenêtre principale 
+# Fenêtre principale
 root = tk.Tk()
 root.title("Voyageur de Commerce — Algorithme Génétique")
 root.geometry("700x580")
@@ -39,9 +39,7 @@ panel.pack(fill="x", padx=10, pady=(10, 0))
 
 tk.Label(panel, text="Nombre de villes:").pack(side="left", padx=(0, 4))
 var_n = tk.StringVar(value="10")
-tk.Spinbox(panel,  textvariable=var_n, width=5).pack(
-    side="left", padx=(0, 15)
-)
+tk.Spinbox(panel, textvariable=var_n, width=5).pack(side="left", padx=(0, 15))
 
 tk.Label(panel, text="Population :").pack(side="left", padx=(0, 4))
 var_pop = tk.StringVar(value="50")
