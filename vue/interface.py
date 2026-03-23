@@ -39,13 +39,13 @@ panel.pack(fill="x", padx=10, pady=(10, 0))
 
 tk.Label(panel, text="Nombre de villes:").pack(side="left", padx=(0, 4))
 var_n = tk.StringVar(value="10")
-tk.Spinbox(panel,  textvariable=var_n, width=5).pack(
+tk.Spinbox(panel,  from_=0 ,to=1000000, textvariable=var_n, width=5).pack(
     side="left", padx=(0, 15)
 )
 
 tk.Label(panel, text="Population :").pack(side="left", padx=(0, 4))
 var_pop = tk.StringVar(value="50")
-tk.Spinbox(panel, from_=10, to=200, textvariable=var_pop, width=6).pack(
+tk.Spinbox(panel, from_=0, to=1000000, textvariable=var_pop, width=6).pack(
     side="left", padx=(0, 15)
 )
 
