@@ -1,13 +1,12 @@
-import sys
-import os
+import sys, os, random, threading, time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-import random
-import threading
 from model.ville import Ville
 from model.genetic_algorithm import GeneticAlgorithm
 from model.individu import Individu
+
+ROUTE_RUN = "#D4788A"
+ROUTE_DONE = "#9B6B8A"
 
 
 class Controller:
@@ -32,54 +31,43 @@ class Controller:
         if not self.villes:
             return
         self.view.set_boutons(False)
-        self.view.lbl_status.config(text="En cours...")
+        self.view.lbl_status.config(text="en cours…", fg="#D4788A")
 
         def run():
             algo = GeneticAlgorithm(self.villes, taille_pop)
-
             for gen in range(100):
                 if len(algo.population.liste) < 2:
                     break
-
                 enfants = []
                 while len(enfants) < taille_pop:
-                    parent1, parent2 = algo.selection()
-                    child_chemin = algo.crossover(parent1, parent2)
-                    child_chemin = algo.mutation(child_chemin)
-
-                    enfant = Individu(child_chemin)
-                    enfant.chemin = child_chemin.copy()
-                    enfant.distance_totale = enfant.calculer_distance_totale()
-                    enfant.fitness = 1 / enfant.distance_totale
-
-                    enfants.append(enfant)
-
+                    p1, p2 = algo.selection()
+                    ch = algo.mutation(algo.crossover(p1, p2))
+                    e = Individu(ch)
+                    e.chemin = ch.copy()
+                    e.distance_totale = e.calculer_distance_totale()
+                    e.fitness = 1 / e.distance_totale
+                    enfants.append(e)
                 algo.population.liste = enfants
                 best = algo.population.get_best()
 
                 def update(g=gen, b=best):
-                    self.view.dessiner(self.villes, b.chemin, "blue")
-                    self.view.lbl_gen.config(text=f"Génération : {g + 1}")
-                    self.view.lbl_dist.config(
-                        text=f"Distance : {b.distance_totale:.1f}"
-                    )
+                    self.view.dessiner(self.villes, b.chemin, ROUTE_RUN)
+                    self.view.lbl_gen.config(text=f"{g+1} / 100")
+                    self.view.lbl_dist.config(text=f"{b.distance_totale:.1f}")
+                    self.view.update_courbe(b.distance_totale)
                     self.view.progress["value"] = g + 1
 
                 self.view.root.after(0, update)
-
-                # pause courte pour rendre visible l'évolution
-                import time
-
                 time.sleep(0.02)
 
             best = algo.population.get_best()
 
             def finish(b=best):
-                self.view.dessiner(self.villes, b.chemin, "green")
-                self.view.lbl_gen.config(text=f"Génération : {min(100, gen + 1)}")
-                self.view.lbl_dist.config(text=f"Distance : {b.distance_totale:.1f}")
+                self.view.dessiner(self.villes, b.chemin, ROUTE_DONE)
+                self.view.lbl_gen.config(text=f"{min(100, gen+1)} / 100")
+                self.view.lbl_dist.config(text=f"{b.distance_totale:.1f}")
+                self.view.lbl_status.config(text="terminé ✓", fg="#9B6B8A")
                 self.view.progress["value"] = min(100, gen + 1)
-                self.view.lbl_status.config(text="Terminé ✔")
                 self.view.set_boutons(True)
 
             self.view.root.after(0, finish)

@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-import sys
-import os
+import sys, os, random, threading, time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -9,126 +8,368 @@ from controlleur.controller import Controller
 from model.ville import Ville
 from model.genetic_algorithm import GeneticAlgorithm
 
+# ── Palette pastel douce ───────────────────────────────────────────────────────
+BG = "#FAF7F5"  # blanc cassé chaud
+TOPBAR_BG = "#F2E8E8"  # rose poudré très pâle
+PANEL_BG = "#FDF9F8"  # blanc légèrement rosé
+CARD_BG = "#FFFFFF"
+BORDER = "#EDD8D8"  # bordure rose très douce
+ACCENT = "#D4788A"  # rose poudré profond — couleur principale
+ACCENT_SOFT = "#EBA8B5"  # rose doux secondaire
+ACCENT_PALE = "#F7E0E5"  # rose très pâle pour fonds
+ROUTE_RUN = "#D4788A"
+ROUTE_DONE = "#9B6B8A"  # mauve rose pour la route finale
+FG = "#3D2B2B"  # brun foncé doux
+FG_MID = "#8A6A6A"  # brun moyen
+FG_DIM = "#BFA0A0"  # brun rosé atténué
+CITY_FILL = "#D4788A"
+CITY_OUT = "#F2C4CC"
+GRID = "#F0EAEA"
+BTN_GEN_BG = "#D4788A"
+BTN_RUN_BG = "#7ABFA8"  # vert sauge doux
+BTN_RST_BG = "#C49080"  # terracotta doux
 
-def dessiner(canvas, villes, chemin=None, couleur_route="blue"):
+FONT_UI = ("Segoe UI", 9)
+FONT_BOLD = ("Segoe UI", 9, "bold")
+FONT_SMALL = ("Segoe UI", 8)
+FONT_TINY = ("Segoe UI", 7)
+FONT_MONO = ("Consolas", 9, "bold")
+FONT_TITLE = ("Georgia", 11, "italic")
+
+
+# ── Dessin carte ──────────────────────────────────────────────────────────────
+def dessiner_carte(canvas, villes, chemin=None, couleur=ROUTE_RUN):
     canvas.delete("all")
+    w = canvas.winfo_width() or 640
+    h = canvas.winfo_height() or 400
+    canvas.create_rectangle(0, 0, w, h, fill=BG, outline="")
+    for x in range(0, w, 40):
+        canvas.create_line(x, 0, x, h, fill=GRID, width=1)
+    for y in range(0, h, 40):
+        canvas.create_line(0, y, w, y, fill=GRID, width=1)
     if chemin:
         for i in range(len(chemin)):
             v1 = chemin[i]
             v2 = chemin[(i + 1) % len(chemin)]
-            canvas.create_line(v1.x, v1.y, v2.x, v2.y, fill=couleur_route, width=2)
+            canvas.create_line(v1.x, v1.y, v2.x, v2.y, fill=ACCENT_PALE, width=6)
+        for i in range(len(chemin)):
+            v1 = chemin[i]
+            v2 = chemin[(i + 1) % len(chemin)]
+            canvas.create_line(v1.x, v1.y, v2.x, v2.y, fill=couleur, width=1.5)
     for v in villes:
         r = 5
         canvas.create_oval(
-            v.x - r, v.y - r, v.x + r, v.y + r, fill="red", outline="white"
+            v.x - r - 3,
+            v.y - r - 3,
+            v.x + r + 3,
+            v.y + r + 3,
+            fill=ACCENT_PALE,
+            outline="",
+        )
+        canvas.create_oval(
+            v.x - r,
+            v.y - r,
+            v.x + r,
+            v.y + r,
+            fill=CITY_FILL,
+            outline=CARD_BG,
+            width=1.5,
         )
         canvas.create_text(
-            v.x + 9, v.y - 9, text=str(v.num), fill="black", font=("Arial", 7)
+            v.x + 10, v.y - 10, text=str(v.num), fill=FG_DIM, font=FONT_TINY
         )
 
 
-# Fenêtre principale
+# ── Dessin courbe ─────────────────────────────────────────────────────────────
+def dessiner_courbe(canvas, hist):
+    canvas.delete("all")
+    w = canvas.winfo_width() or 220
+    h = canvas.winfo_height() or 120
+    pL, pR, pT, pB = 42, 8, 10, 20
+    cw, ch = w - pL - pR, h - pT - pB
+
+    canvas.create_rectangle(0, 0, w, h, fill=CARD_BG, outline="")
+    canvas.create_line(pL, pT, pL, h - pB, fill=BORDER, width=1)
+    canvas.create_line(pL, h - pB, w - pR, h - pB, fill=BORDER, width=1)
+
+    if len(hist) < 2:
+        canvas.create_text(
+            w // 2, h // 2, text="en attente", fill=FG_DIM, font=FONT_TINY
+        )
+        return
+
+    mn, mx = min(hist), max(hist)
+    sp = mx - mn or 1
+    n = len(hist)
+    pts = [
+        (pL + (i / (n - 1)) * cw, h - pB - ((d - mn) / sp) * ch)
+        for i, d in enumerate(hist)
+    ]
+
+    poly = [pL, h - pB] + [c for p in pts for c in p] + [pts[-1][0], h - pB]
+    canvas.create_polygon(poly, fill=ACCENT_PALE, outline="")
+
+    for i in range(len(pts) - 1):
+        canvas.create_line(
+            pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], fill=ACCENT, width=2
+        )
+
+    canvas.create_text(
+        pL - 4, pT + 4, text=f"{mx:.0f}", fill=FG_DIM, font=FONT_TINY, anchor="e"
+    )
+    canvas.create_text(
+        pL - 4, h - pB, text=f"{mn:.0f}", fill=ACCENT, font=FONT_TINY, anchor="e"
+    )
+
+    xf, yf = pts[-1]
+    canvas.create_oval(
+        xf - 4, yf - 4, xf + 4, yf + 4, fill=ACCENT, outline=CARD_BG, width=1.5
+    )
+
+
+# ── Fenêtre ───────────────────────────────────────────────────────────────────
 root = tk.Tk()
-root.title("Voyageur de Commerce — Algorithme Génétique")
-root.geometry("700x580")
+root.title("Voyageur de Commerce")
+root.geometry("960x640")
+root.configure(bg=BG)
 root.resizable(True, True)
 
-#  Panneau de contrôle ───────────────────────────────────────────────────────
-panel = tk.Frame(root, bg="#FFB5C0", pady=8)
-panel.pack(fill="x", padx=10, pady=(10, 0))
-
-tk.Label(panel, text="Nombre de villes:").pack(side="left", padx=(0, 4))
-var_n = tk.StringVar(value="10")
-tk.Spinbox(panel, from_=0, to=100000, textvariable=var_n, width=5).pack(
-    side="left", padx=(0, 15)
+style = ttk.Style(root)
+style.theme_use("clam")
+style.configure(
+    "P.Horizontal.TProgressbar",
+    troughcolor=ACCENT_PALE,
+    background=ACCENT,
+    bordercolor=ACCENT_PALE,
+    lightcolor=ACCENT_SOFT,
+    darkcolor=ACCENT,
+    thickness=4,
 )
 
-tk.Label(panel, text="Population :").pack(side="left", padx=(0, 4))
-var_pop = tk.StringVar(value="50")
-tk.Spinbox(panel, from_=0, to=100000, textvariable=var_pop, width=6).pack(
-    side="left", padx=(0, 15)
+# ══════════════════════════════════════════════════════════
+#  TOPBAR
+# ══════════════════════════════════════════════════════════
+topbar = tk.Frame(root, bg=TOPBAR_BG, height=64)
+topbar.pack(fill="x")
+topbar.pack_propagate(False)
+
+# Titre
+tk.Label(
+    topbar,
+    text="Voyageur de Commerce",
+    bg=TOPBAR_BG,
+    fg=FG,
+    font=("Georgia", 12, "italic"),
+).pack(side="left", padx=(18, 6), pady=14)
+
+tk.Label(topbar, text="·", bg=TOPBAR_BG, fg=FG_DIM, font=FONT_UI).pack(
+    side="left", padx=(0, 6)
 )
 
-btn_generer = tk.Button(
-    panel,
-    text="Générer",
-    bg="#002FFF",
-    fg="white",
-    padx=10,
-    command=lambda: controller.generer_villes(
-        int(var_n.get()), canvas.winfo_width() or 600, canvas.winfo_height() or 450
+tk.Label(
+    topbar, text="algorithme génétique", bg=TOPBAR_BG, fg=FG_DIM, font=FONT_SMALL
+).pack(side="left")
+
+# Séparateur
+tk.Frame(topbar, bg=BORDER, width=1).pack(side="left", fill="y", padx=18, pady=14)
+
+
+# Champs de saisie
+def make_entry(parent, label, default, width=5):
+    f = tk.Frame(parent, bg=TOPBAR_BG)
+    tk.Label(f, text=label, bg=TOPBAR_BG, fg=FG_MID, font=FONT_SMALL).pack(
+        anchor="w", pady=(0, 3)
+    )
+    entry = tk.Entry(
+        f,
+        width=width,
+        bg=CARD_BG,
+        fg=ACCENT,
+        font=("Segoe UI", 12, "bold"),
+        relief="flat",
+        bd=0,
+        insertbackground=ACCENT,
+        justify="center",
+        highlightthickness=1,
+        highlightbackground=BORDER,
+        highlightcolor=ACCENT,
+    )
+    entry.insert(0, str(default))
+    entry.pack()
+    return f, entry
+
+
+frm_n, entry_n = make_entry(topbar, "Villes", 10, width=5)
+frm_pop, entry_pop = make_entry(topbar, "Population", 50, width=5)
+
+frm_n.pack(side="left", padx=(0, 16), pady=12)
+frm_pop.pack(side="left", padx=(0, 20), pady=12)
+
+
+def get_n():
+    try:
+        return max(2, int(entry_n.get()))
+    except:
+        return 10
+
+
+def get_pop():
+    try:
+        return max(2, int(entry_pop.get()))
+    except:
+        return 50
+
+
+# Séparateur
+tk.Frame(topbar, bg=BORDER, width=1).pack(side="left", fill="y", padx=(0, 16), pady=14)
+
+
+# Boutons
+def make_btn(parent, text, bg, cmd):
+    return tk.Button(
+        parent,
+        text=text,
+        bg=bg,
+        fg="white",
+        font=FONT_BOLD,
+        padx=14,
+        pady=5,
+        relief="flat",
+        bd=0,
+        cursor="hand2",
+        activebackground=bg,
+        activeforeground="white",
+        command=cmd,
+    )
+
+
+btn_generer = make_btn(
+    topbar,
+    "Générer",
+    BTN_GEN_BG,
+    lambda: controller.generer_villes(
+        get_n(), canvas_map.winfo_width() or 640, canvas_map.winfo_height() or 400
     ),
 )
-btn_generer.pack(side="left", padx=(0, 8))
+btn_generer.pack(side="left", padx=(0, 8), pady=16)
 
-btn_lancer = tk.Button(
-    panel,
-    text="Lancer",
-    bg="#18D127",
-    fg="white",
-    padx=10,
-    command=lambda: controller.lancer(int(var_pop.get())),
+btn_lancer = make_btn(
+    topbar, "Lancer", BTN_RUN_BG, lambda: controller.lancer(get_pop())
 )
-btn_lancer.pack(side="left", padx=(0, 8))
+btn_lancer.pack(side="left", padx=(0, 8), pady=16)
 
-btn_reset = tk.Button(
-    panel,
-    text="Reset",
-    bg="#f44336",
-    fg="white",
-    padx=10,
-    command=lambda: controller.reset(),
+btn_reset = make_btn(topbar, "Reset", BTN_RST_BG, lambda: controller.reset())
+btn_reset.pack(side="left", pady=16)
+
+# Statut à droite
+lbl_status = tk.Label(topbar, text="prêt", bg=TOPBAR_BG, fg=FG_DIM, font=FONT_SMALL)
+lbl_status.pack(side="right", padx=18)
+
+# Ligne douce sous la topbar
+tk.Frame(root, bg=BORDER, height=1).pack(fill="x")
+
+# ══════════════════════════════════════════════════════════
+#  CONTENU
+# ══════════════════════════════════════════════════════════
+content = tk.Frame(root, bg=BG)
+content.pack(fill="both", expand=True, padx=12, pady=10)
+
+# Carte
+map_outer = tk.Frame(content, bg=BORDER, padx=1, pady=1)
+map_outer.pack(side="left", fill="both", expand=True)
+canvas_map = tk.Canvas(map_outer, bg=BG, highlightthickness=0)
+canvas_map.pack(fill="both", expand=True)
+
+# Panneau droit
+right = tk.Frame(
+    content, bg=PANEL_BG, width=220, highlightthickness=1, highlightbackground=BORDER
 )
-btn_reset.pack(side="left")
+right.pack(side="right", fill="y", padx=(10, 0))
+right.pack_propagate(False)
 
-# ── Canvas ────────────────────────────────────────────────────────────────────
-canvas = tk.Canvas(root, bg="WHITE")
-canvas.pack(fill="both", expand=True, padx=10, pady=8)
 
-# ── Barre d'état ──────────────────────────────────────────────────────────────
-status_bar = tk.Frame(root, bg="#f0f0f0")
-status_bar.pack(fill="x", padx=10, pady=(0, 8))
+def section_title(parent, text):
+    f = tk.Frame(parent, bg=PANEL_BG)
+    f.pack(fill="x", padx=14, pady=(14, 6))
+    tk.Label(f, text=text, bg=PANEL_BG, fg=FG_MID, font=("Segoe UI", 8, "bold")).pack(
+        side="left"
+    )
+    tk.Frame(f, bg=BORDER, height=1).pack(
+        side="left", fill="x", expand=True, padx=(8, 0), pady=4
+    )
 
-lbl_gen = tk.Label(
-    status_bar, text="Génération : —", bg="#f0f0f0", width=20, anchor="w"
+
+def stat_card(parent, label, accent=ACCENT):
+    card = tk.Frame(parent, bg=ACCENT_PALE, highlightthickness=0)
+    card.pack(fill="x", padx=14, pady=(0, 8))
+    tk.Label(
+        card, text=label, bg=ACCENT_PALE, fg=FG_DIM, font=FONT_TINY, anchor="w"
+    ).pack(fill="x", padx=10, pady=(8, 0))
+    val = tk.Label(
+        card,
+        text="—",
+        bg=ACCENT_PALE,
+        fg=accent,
+        font=("Segoe UI", 16, "bold"),
+        anchor="w",
+    )
+    val.pack(fill="x", padx=10, pady=(2, 8))
+    return val
+
+
+section_title(right, "Résultats")
+lbl_gen = stat_card(right, "génération", ACCENT)
+lbl_dist = stat_card(right, "meilleure distance", ROUTE_DONE)
+
+section_title(right, "Évolution")
+canvas_chart = tk.Canvas(
+    right, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER, height=120
 )
-lbl_gen.pack(side="left")
+canvas_chart.pack(fill="x", padx=14, pady=(0, 10))
 
-lbl_dist = tk.Label(status_bar, text="Distance : —", bg="#f0f0f0")
-lbl_dist.pack(side="left")
+section_title(right, "Progression")
+prog_wrap = tk.Frame(right, bg=PANEL_BG)
+prog_wrap.pack(fill="x", padx=14, pady=(0, 10))
+progress = ttk.Progressbar(
+    prog_wrap, orient="horizontal", style="P.Horizontal.TProgressbar"
+)
+progress.pack(fill="x")
 
-progress = ttk.Progressbar(status_bar, orient="horizontal", length=100)
-progress.pack(side="left", padx=10)
-
-lbl_status = tk.Label(status_bar, text="Prêt", bg="#f0f0f0", fg="gray", anchor="e")
-lbl_status.pack(side="right")
+historique = []
 
 
-# ── Objet vue exposé au contrôleur ────────────────────────────────────────────
+# ── Vue ───────────────────────────────────────────────────────────────────────
 class View:
     def __init__(self):
         self.root = root
-        self.canvas = canvas
+        self.canvas = canvas_map
         self.lbl_gen = lbl_gen
         self.lbl_dist = lbl_dist
         self.lbl_status = lbl_status
         self.progress = progress
 
-    def dessiner(self, villes, chemin=None, couleur_route="blue"):
-        dessiner(canvas, villes, chemin, couleur_route)
+    def dessiner(self, villes, chemin=None, couleur=ROUTE_RUN):
+        dessiner_carte(canvas_map, villes, chemin, couleur)
+
+    def update_courbe(self, distance):
+        historique.append(distance)
+        dessiner_courbe(canvas_chart, historique)
 
     def reset_stats(self):
-        lbl_gen.config(text="Génération : —")
-        lbl_dist.config(text="Distance : —")
-        lbl_status.config(text="Prêt")
+        lbl_gen.config(text="—")
+        lbl_dist.config(text="—")
+        lbl_status.config(text="prêt", fg=FG_DIM)
         progress["value"] = 0
+        historique.clear()
+        dessiner_courbe(canvas_chart, [])
 
     def set_boutons(self, actif):
-        state = "normal" if actif else "disabled"
-        btn_generer.config(state=state)
-        btn_lancer.config(state=state)
-        btn_reset.config(state=state)
+        s = "normal" if actif else "disabled"
+        btn_generer.config(state=s)
+        btn_lancer.config(state=s)
+        btn_reset.config(state=s)
 
 
 view = View()
 controller = Controller(view)
+root.mainloop()
