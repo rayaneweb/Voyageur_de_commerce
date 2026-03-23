@@ -27,32 +27,32 @@ def dessiner(canvas, villes, chemin=None, couleur_route="blue"):
         )
 
 
-# ── Fenêtre principale ────────────────────────────────────────────────────────
+# Fenêtre principale 
 root = tk.Tk()
 root.title("Voyageur de Commerce — Algorithme Génétique")
 root.geometry("700x580")
 root.resizable(True, True)
 
-# ── Panneau de contrôle ───────────────────────────────────────────────────────
-panel = tk.Frame(root, bg="#f0f0f0", pady=8)
+#  Panneau de contrôle ───────────────────────────────────────────────────────
+panel = tk.Frame(root, bg="#FFB5C0", pady=8)
 panel.pack(fill="x", padx=10, pady=(10, 0))
 
-tk.Label(panel, text="Nombre de villes :", bg="#f0f0f0").pack(side="left", padx=(0, 4))
-var_n = tk.StringVar(value="20")
-tk.Spinbox(panel, from_=5, to=80, textvariable=var_n, width=5).pack(
-    side="left", padx=(0, 16)
+tk.Label(panel, text="Nombre de villes:").pack(side="left", padx=(0, 4))
+var_n = tk.StringVar(value="10")
+tk.Spinbox(panel,  textvariable=var_n, width=5).pack(
+    side="left", padx=(0, 15)
 )
 
-tk.Label(panel, text="Population :", bg="#f0f0f0").pack(side="left", padx=(0, 4))
+tk.Label(panel, text="Population :").pack(side="left", padx=(0, 4))
 var_pop = tk.StringVar(value="50")
 tk.Spinbox(panel, from_=10, to=200, textvariable=var_pop, width=6).pack(
-    side="left", padx=(0, 16)
+    side="left", padx=(0, 15)
 )
 
 btn_generer = tk.Button(
     panel,
     text="Générer",
-    bg="#2196F3",
+    bg="#002FFF",
     fg="white",
     padx=10,
     command=lambda: controller.generer_villes(
@@ -63,8 +63,8 @@ btn_generer.pack(side="left", padx=(0, 8))
 
 btn_lancer = tk.Button(
     panel,
-    text="▶ Lancer",
-    bg="#4CAF50",
+    text="Lancer",
+    bg="#18D127",
     fg="white",
     padx=10,
     command=lambda: controller.lancer(int(var_pop.get())),
@@ -73,7 +73,7 @@ btn_lancer.pack(side="left", padx=(0, 8))
 
 btn_reset = tk.Button(
     panel,
-    text="↺ Reset",
+    text="Reset",
     bg="#f44336",
     fg="white",
     padx=10,
@@ -82,7 +82,7 @@ btn_reset = tk.Button(
 btn_reset.pack(side="left")
 
 # ── Canvas ────────────────────────────────────────────────────────────────────
-canvas = tk.Canvas(root, bg="white", highlightthickness=1, highlightbackground="#ccc")
+canvas = tk.Canvas(root, bg="WHITE")
 canvas.pack(fill="both", expand=True, padx=10, pady=8)
 
 # ── Barre d'état ──────────────────────────────────────────────────────────────
@@ -94,10 +94,10 @@ lbl_gen = tk.Label(
 )
 lbl_gen.pack(side="left")
 
-lbl_dist = tk.Label(status_bar, text="Distance : —", bg="#f0f0f0", width=22, anchor="w")
+lbl_dist = tk.Label(status_bar, text="Distance : —", bg="#f0f0f0")
 lbl_dist.pack(side="left")
 
-progress = ttk.Progressbar(status_bar, orient="horizontal", length=200, maximum=100)
+progress = ttk.Progressbar(status_bar, orient="horizontal", length=100)
 progress.pack(side="left", padx=10)
 
 lbl_status = tk.Label(status_bar, text="Prêt", bg="#f0f0f0", fg="gray", anchor="e")
