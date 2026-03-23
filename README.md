@@ -1,34 +1,42 @@
-🧬 Voyageur de Commerce – Algorithme Génétique (TSP)
-📌 Description
+# 🧬 Voyageur de Commerce — Algorithme Génétique (TSP)
 
-Ce projet a pour objectif de résoudre le problème du voyageur de commerce (TSP) en utilisant un algorithme génétique.
-Le but est de trouver le chemin le plus court permettant de passer par toutes les villes une seule fois et de revenir au point de départ.
+## 📌 Description
 
-Une interface graphique en Tkinter permet de générer des villes aléatoires et de visualiser le chemin trouvé par l’algorithme.
+Ce projet résout le **problème du voyageur de commerce (TSP)** à l'aide d'un algorithme génétique.  
+L'objectif est de trouver le chemin le plus court passant par toutes les villes exactement une fois, avant de revenir au point de départ.
 
-🧠 Algorithme génétique
+Une interface graphique en **Tkinter** permet de saisir les paramètres, de générer des villes aléatoires et de visualiser en temps réel l'évolution du chemin trouvé par l'algorithme.
 
-L’algorithme génétique simule l’évolution naturelle pour améliorer progressivement les solutions.
+---
 
-Étapes de l’algorithme :
-Génération d’une population initiale aléatoire
-Évaluation de la fitness de chaque individu
-Sélection des meilleurs individus
-Croisement (crossover)
-Mutation
-Création d’une nouvelle population
-Répétition jusqu’à amélioration de la solution
+## 🧠 Algorithme génétique
 
-La fitness est définie par :
+L'algorithme génétique simule l'évolution naturelle pour améliorer progressivement les solutions.
 
+**Étapes :**
+1. Génération d'une population initiale aléatoire
+2. Évaluation de la fitness de chaque individu
+3. Sélection des meilleurs individus
+4. Croisement *(crossover)*
+5. Mutation
+6. Création d'une nouvelle population
+7. Répétition sur 100 générations
+
+La **fitness** est définie par :
+
+```
 fitness = 1 / distance_totale
+```
 
-Plus la distance est petite, plus la fitness est grande.
+> Plus la distance est petite, plus la fitness est grande.
 
-🏗 Architecture MVC
+---
 
-Le projet est organisé selon l’architecture MVC (Model - View - Controller) :
+## 🏗 Architecture MVC
 
+Le projet suit l'architecture **Model – View – Controller** :
+
+```
 project/
 │
 ├── model/
@@ -37,53 +45,75 @@ project/
 │   ├── population.py
 │   └── genetic_algorithm.py
 │
-├── view/
+├── vue/
 │   └── interface.py
 │
-├── controller/
+├── controlleur/
 │   └── controller.py
 │
 └── main.py
-Partie	Rôle
-Model	Algorithme génétique et structures de données
-View	Interface graphique Tkinter
-Controller	Lien entre l’interface et l’algorithme
-main	Lance l’application
-🖥 Interface graphique
+```
 
-L’interface permet :
+| Partie | Rôle |
+|---|---|
+| `model` | Algorithme génétique et structures de données |
+| `vue` | Interface graphique Tkinter |
+| `controlleur` | Lien entre l'interface et l'algorithme |
+| `main.py` | Point d'entrée — lance l'application |
 
-Entrer le nombre de villes
-Générer des villes aléatoires
-Lancer l’algorithme génétique
-Afficher le chemin trouvé
+---
 
-Les villes sont représentées par des points et le chemin par des lignes.
+## 🖥 Interface graphique
 
-▶️ Lancer le projet
+L'interface propose :
 
-Dans le terminal :
+- **Saisie libre** du nombre de villes et de la taille de la population directement dans la barre du haut
+- **Génération** de villes aléatoires sur la carte
+- **Lancement** de l'algorithme génétique avec visualisation en direct
+- **Courbe d'évolution** de la meilleure distance génération par génération
+- **Indicateur de progression** et affichage de la meilleure distance trouvée
 
+Les villes sont représentées par des points colorés, le chemin courant par des lignes, et le chemin final s'affiche dans une couleur distincte à la fin.
+
+---
+
+## ▶️ Lancer le projet
+
+```bash
 python main.py
-Utilisation :
-Entrer le nombre de villes
-Cliquer sur Générer villes
-Cliquer sur Lancer algorithme
-Le chemin optimal s’affiche
-⚙️ Paramètres de l’algorithme
-Paramètre	Valeur
-Taille population	50
-Nombre de générations	100
-Mutation	Échange de deux villes
-Sélection	Meilleurs individus
-Crossover	Order crossover
-📚 Projet réalisé dans le cadre du cours
+```
 
-Intelligence Artificielle – Algorithmes Génétique
-Problème du Voyageur de Commerce (TSP)
+**Utilisation :**
+1. Saisir le nombre de villes souhaité dans le champ *Villes*
+2. Saisir la taille de la population dans le champ *Population*
+3. Cliquer sur **Générer** pour placer les villes aléatoirement
+4. Cliquer sur **Lancer** pour démarrer l'algorithme
+5. Observer l'évolution du chemin et de la courbe en temps réel
+6. Le chemin optimal final s'affiche à la fin des 100 générations
 
-👤 Auteur
+---
 
-Rayane Ait Braham
-Salah Benrabah
-Lina Ouallam
+## ⚙️ Paramètres de l'algorithme
+
+| Paramètre | Valeur |
+|---|---|
+| Taille population | Saisie libre (défaut : 50) |
+| Nombre de générations | 100 *(fixe)* |
+| Mutation | Échange de deux villes aléatoires |
+| Sélection | Meilleurs individus |
+| Crossover | Order crossover (OX) |
+
+---
+
+## 📚 Contexte académique
+
+> Projet réalisé dans le cadre du cours **Intelligence Artificielle — Algorithmes Génétiques**  
+> Problème du Voyageur de Commerce (TSP)
+
+---
+
+## 👤 Auteurs
+
+- **Rayane Ait Braham**
+- **Salah Benrabah**
+- **Lina Ouallam**
