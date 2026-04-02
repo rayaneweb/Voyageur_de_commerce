@@ -22,4 +22,3 @@ class Population:
     def afficher_population(self):
         for individu in self.liste:
             print(individu)
-
